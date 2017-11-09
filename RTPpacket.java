@@ -51,9 +51,39 @@ public class RTPpacket{
     //.............
     //fill the header array of byte with RTP header fields
 
-    //header[0] = ...
-    // .....
- 
+    // write 0 into every byte
+    for(int i = 0; i < 12; i++)
+    {
+    	header[i] = 0;
+    }
+
+    // Byte 0: V(2), P(1), X(1), CC(4)
+    header[0] |= Version << (7-1);
+    header[0] |= Padding << (7-2);
+    header[0] |= Extension << (7-3);
+    header[0] |= CC;
+    		
+    // Byte 1: M(1), PT(7)
+    header[1] |= Marker << (7-1);
+    header[1] |= PayloadType;
+    
+    // Byte 2 Sequencenumber oberer Teil
+    header[2] |= SequenceNumber >> 8;
+    
+    // Byte 3 Sequencenumber unterer Teil
+    header[3] |= SequenceNumber;
+    
+    // Byte 4-7 TimeStamp
+    for(int i = 0; i < 4; i++)
+    {
+    	header[i+4] |= TimeStamp >> 8*(3-i);
+    }
+
+    // Byte 8-11 SSRC
+    for(int i = 0; i < 4; i++)
+    {
+    	header[i+(2*4)] |= Ssrc >> 8*(3-i);
+    }
 
     //fill the payload bitstream:
     //--------------------------
