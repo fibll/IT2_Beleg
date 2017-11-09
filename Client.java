@@ -297,7 +297,12 @@ public class Client{
 
       try{
 	//receive the DP from the socket:
-	RTPsocket.receive(rcvdp);
+    	  
+    	  //System.out.println("\n\ntest\n\n");
+    	  
+    	  RTPsocket.receive(rcvdp);
+    	  
+    	  //System.out.println("\n\ntest   2\n\n");
 	  
 	//create an RTPpacket object from the DP
 	RTPpacket rtp_packet = new RTPpacket(rcvdp.getData(), rcvdp.getLength());
