@@ -50,7 +50,7 @@ public class RTPpacket{
     //TO COMPLETE
     //.............
     //fill the header array of byte with RTP header fields
-
+   
     // write 0 into every byte
     for(int i = 0; i < 12; i++)
     {
