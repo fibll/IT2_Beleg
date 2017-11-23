@@ -10,6 +10,9 @@ import java.util.*;
 import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.Timer;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+
 
 public class Server extends JFrame implements ActionListener {
 
@@ -23,9 +26,16 @@ public class Server extends JFrame implements ActionListener {
 	int RTP_dest_port = 0; // destination port for RTP packets (given by the
 							// RTSP Client)
 
+	// packetLoss stuff
+	Random random = new Random();
+	static double packetLoss = 0.0;
+	static int sliderPosition = 10;
+	
 	// GUI:
 	// ----------------
 	JLabel label;
+	JSlider slider = new JSlider(JSlider.HORIZONTAL,
+            0, 100, sliderPosition);
 
 	// Video variables:
 	// ----------------
@@ -63,7 +73,7 @@ public class Server extends JFrame implements ActionListener {
 	int RTSPSeqNb = 0; // Sequence number of RTSP messages within the session
 
 	final static String CRLF = "\r\n";
-
+	
 	// --------------------------------
 	// Constructor
 	// --------------------------------
@@ -92,6 +102,16 @@ public class Server extends JFrame implements ActionListener {
 		// GUI:
 		label = new JLabel("Send frame #        ", JLabel.CENTER);
 		getContentPane().add(label, BorderLayout.CENTER);
+		getContentPane().add(slider);
+		
+		// handler
+		slider.addChangeListener(new SliderListener());
+		
+		//Turn on labels at major tick marks.
+		slider.setMajorTickSpacing(10);
+		slider.setMinorTickSpacing(1);
+		slider.setPaintTicks(true);
+		slider.setPaintLabels(true);
 	}
 
 	// ------------------------------------
@@ -160,8 +180,10 @@ public class Server extends JFrame implements ActionListener {
 			request_type = theServer.parse_RTSP_request(); // blocking
 
 			if ((request_type == PLAY) && (state == READY)) {
+					
 				// send back response
 				theServer.send_RTSP_response(request_type);
+				
 				// start timer
 				theServer.timer.start();
 				// update state
@@ -227,10 +249,17 @@ public class Server extends JFrame implements ActionListener {
 				byte[] packet_bits = new byte[packet_length];
 				rtp_packet.getpacket(packet_bits);
 
-				// send the packet as a DatagramPacket over the UDP socket
-				senddp = new DatagramPacket(packet_bits, packet_length,
-						ClientIPAddr, RTP_dest_port);
-				RTPsocket.send(senddp);
+				System.out.println("Slider: " + sliderPosition);
+				
+				// simulate packet loss
+				if (random.nextDouble() > packetLoss) {
+				
+					// send the packet as a DatagramPacket over the UDP socket
+					senddp = new DatagramPacket(packet_bits, packet_length,
+							ClientIPAddr, RTP_dest_port);
+					RTPsocket.send(senddp);
+					
+		        }
 
 				// System.out.println("Send frame #"+imagenb);
 				// print the header bitstream
@@ -247,6 +276,19 @@ public class Server extends JFrame implements ActionListener {
 			timer.stop();
 		}
 	}
+	
+	// handler for slider
+	class SliderListener implements ChangeListener {
+	    public void stateChanged(ChangeEvent e) {
+	        JSlider source = (JSlider)e.getSource();
+	        if (!source.getValueIsAdjusting()) {
+	        	System.out.println("Slider changed!");
+	            packetLoss = (double)source.getValue()/100;
+	            System.out.println("" + packetLoss);
+	        }    
+	    }
+	}
+
 
 	// ------------------------------------
 	// Parse RTSP Request
