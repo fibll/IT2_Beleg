@@ -19,8 +19,9 @@ public class Client {
 	JButton setupButton = new JButton("Setup");
 	JButton playButton = new JButton("Play");
 	JButton pauseButton = new JButton("Pause");
-	JButton tearButton = new JButton("Teardown");
+	JButton describeButton = new JButton("Describe");
 	JButton optionsButton = new JButton("Options");
+	JButton tearButton = new JButton("Teardown");
 	JPanel mainPanel = new JPanel();
 	JPanel buttonPanel = new JPanel();
 	JLabel iconLabel = new JLabel();
@@ -43,7 +44,8 @@ public class Client {
 	final static int INIT = 0;
 	final static int READY = 1;
 	final static int PLAYING = 2;
-	final static int OPTIONS = 2;
+	final static int OPTIONS = 3;
+	final static int DESCRIBE = 4;
 	static int state; // RTSP state == INIT or READY or PLAYING
 	Socket RTSPsocket; // socket used to send/receive RTSP messages
 	// input and output stream filters
@@ -79,13 +81,15 @@ public class Client {
 		buttonPanel.add(setupButton);
 		buttonPanel.add(playButton);
 		buttonPanel.add(pauseButton);
-		buttonPanel.add(tearButton);
+		buttonPanel.add(describeButton);
 		buttonPanel.add(optionsButton);
+		buttonPanel.add(tearButton);
 		setupButton.addActionListener(new setupButtonListener());
 		playButton.addActionListener(new playButtonListener());
 		pauseButton.addActionListener(new pauseButtonListener());
-		tearButton.addActionListener(new tearButtonListener());
+		describeButton.addActionListener(new describeButtonListener());
 		optionsButton.addActionListener(new optionsButtonListener());
+		tearButton.addActionListener(new tearButtonListener());
 
 		// Image display label
 		iconLabel.setIcon(null);
@@ -249,6 +253,70 @@ public class Client {
 		}
 	}
 
+	// Handler for Describe button
+	// -----------------------
+	class describeButtonListener implements ActionListener {
+		public void actionPerformed(ActionEvent e) {
+
+			System.out.println("Describe Button pressed !");
+
+			// save state
+			int tmpState = state;
+
+			// change RTSP state and print out new state
+			state = DESCRIBE;
+			System.out.println("New RTSP state: DESCRIBE");
+
+			// increase RTSP sequence number
+			RTSPSeqNb++;
+
+			// Send options message to the server
+			send_RTSP_request("DESCRIBE");
+
+			System.out.println("\nsend Describe request\n");
+
+			// Wait for the response
+			if (parse_server_response() != 200)
+				System.out.println("Invalid Server Response");
+			else {
+				// set state back
+				state = tmpState;
+			}
+		}
+	}
+
+	// Handler for Options button
+	// -----------------------
+	class optionsButtonListener implements ActionListener {
+		public void actionPerformed(ActionEvent e) {
+
+			System.out.println("Options Button pressed !");
+
+			// save state
+			int tmpState = state;
+
+			// change RTSP state and print out new state
+			state = OPTIONS;
+			System.out.println("New RTSP state: OPTIONS");
+
+			// increase RTSP sequence number
+			RTSPSeqNb++;
+
+			// Send options message to the server
+			send_RTSP_request("OPTIONS");
+
+			System.out.println("\nsend Option request\n");
+
+			// Wait for the response
+			if (parse_server_response() != 200)
+				System.out.println("Invalid Server Response");
+			else {
+				// set state back
+				state = tmpState;
+			}
+		}
+	}
+
 	// Handler for Teardown button
 	// -----------------------
 	class tearButtonListener implements ActionListener {
@@ -272,41 +340,9 @@ public class Client {
 
 				// stop the timer
 				timer.stop();
-				
+
 				// exit
 				System.exit(0);
-			}
-		}
-	}
-
-	// Handler for Options button
-	// -----------------------
-	class optionsButtonListener implements ActionListener {
-		public void actionPerformed(ActionEvent e) {
-
-			System.out.println("Options Button pressed !");
-
-			// save state
-			int tmpState = state;
-			
-			// change RTSP state and print out new state
-			state = OPTIONS;
-			System.out.println("New RTSP state: OPTIONS");
-
-			// increase RTSP sequence number
-			RTSPSeqNb++;
-
-			// Send options message to the server
-			send_RTSP_request("OPTIONS");
-
-			System.out.println("\nsend Option request\n");
-
-			// Wait for the response
-			if (parse_server_response() != 200)
-				System.out.println("Invalid Server Response");
-			else {
-				// set state back
-				state = tmpState;
 			}
 		}
 	}
@@ -380,7 +416,7 @@ public class Client {
 			reply_code = Integer.parseInt(tokens.nextToken());
 
 			// if reply code is OK get and print the 2 other lines
-			if (reply_code == 200) {
+			if (reply_code == 200 && state != DESCRIBE) {
 				String SeqNumLine = RTSPBufferedReader.readLine();
 				System.out.println(SeqNumLine);
 
@@ -389,13 +425,20 @@ public class Client {
 				System.out.println(SessionLine);
 
 				// if state == INIT gets the Session Id from the SessionLine
-				if(state == INIT)
-				{
+				if (state == INIT) {
 					System.out.println("\n STATE == INIT \n");
-					
+
 					tokens = new StringTokenizer(SessionLine);
 					tokens.nextToken(); // skip over the Session:
 					RTSPid = Integer.parseInt(tokens.nextToken());
+				}
+
+				// if state == DESCRIBE gets more lines then usual planed
+			} else if (reply_code == 200){
+				{
+					for (int i = 0; i < 3; i++) {
+						System.out.println(RTSPBufferedReader.readLine());
+					}
 				}
 			}
 		} catch (Exception ex) {
@@ -437,6 +480,10 @@ public class Client {
 			}
 			// if request_type "OPTIONS"
 			else if (request_type.equals("OPTIONS")) {
+				;
+			}
+			// if request_type "OPTIONS"
+			else if (request_type.equals("DESCRIBE")) {
 				;
 			}
 			// otherwise, write the Session line from the RTSPid field
