@@ -52,6 +52,7 @@ public class Server extends JFrame implements ActionListener {
 	final static int OPTIONS = 7;
 
 	static int state; // RTSP Server state == INIT or READY or PLAY
+	static int tmpState = 0;
 	Socket RTSPsocket; // socket used to send/receive RTSP messages
 	// input and output stream filters
 	static BufferedReader RTSPBufferedReader;
@@ -129,8 +130,6 @@ public class Server extends JFrame implements ActionListener {
 		while (!done) {
 			request_type = theServer.parse_RTSP_request(); // blocking
 
-			System.out.println("\n\nOUT OF PARSE\n\n");
-
 			if (request_type == SETUP) {
 				done = true;
 
@@ -147,18 +146,10 @@ public class Server extends JFrame implements ActionListener {
 				// init RTP socket
 				theServer.RTPsocket = new DatagramSocket();
 			} else if (request_type == OPTIONS) {
-
-				System.out.println("\n\nNEXT STEP SEND OPTIONS\n\n");
-
+				state = tmpState;
+				
 				// send back response
 				theServer.send_RTSP_response(request_type);
-
-				System.out.println("\n\n RESPONSE SENT \n\n");
-
-				// close sockets
-				theServer.RTSPsocket.close();
-				theServer.RTPsocket.close();
-				System.out.println("\n SOCKETS CLOSED \n");
 			}
 		}
 
@@ -183,7 +174,13 @@ public class Server extends JFrame implements ActionListener {
 				// update state
 				state = READY;
 				System.out.println("New RTSP state: READY");
-			} else if (request_type == TEARDOWN) {
+			} else if (request_type == OPTIONS) {
+				state = tmpState;
+				
+				// send back response
+				theServer.send_RTSP_response(request_type);
+			}
+			else if(request_type == TEARDOWN) {
 				// send back response
 				theServer.send_RTSP_response(request_type);
 				// stop timer
@@ -193,18 +190,6 @@ public class Server extends JFrame implements ActionListener {
 				theServer.RTPsocket.close();
 
 				System.exit(0);
-			} else if (request_type == OPTIONS) {
-
-				System.out.println("\n\nNEXT STEP SEND OPTIONS\n\n");
-
-				// send back response
-				theServer.send_RTSP_response(request_type);
-
-				System.out.println("\n\n AFTER RESPONSE \n\n");
-
-				// close sockets
-				theServer.RTSPsocket.close();
-				theServer.RTPsocket.close();
 			}
 		}
 	}
@@ -277,10 +262,13 @@ public class Server extends JFrame implements ActionListener {
 				request_type = PLAY;
 			else if ((new String(request_type_string)).compareTo("PAUSE") == 0)
 				request_type = PAUSE;
+			else if ((new String(request_type_string)).compareTo("OPTIONS") == 0){
+				request_type = OPTIONS;
+				tmpState = state;
+			}
 			else if ((new String(request_type_string)).compareTo("TEARDOWN") == 0)
 				request_type = TEARDOWN;
-			else if ((new String(request_type_string)).compareTo("OPTIONS") == 0)
-				request_type = OPTIONS;
+
 
 			System.out.println(request_type);
 
@@ -297,8 +285,6 @@ public class Server extends JFrame implements ActionListener {
 			RTSPSeqNb = Integer.parseInt(tokens.nextToken());
 
 			if (request_type != OPTIONS) {
-				System.out.println("\n\nGET LAST LINE\n\n");
-
 				// get LastLine
 				String LastLine = RTSPBufferedReader.readLine();
 				System.out.println(LastLine);
@@ -317,9 +303,6 @@ public class Server extends JFrame implements ActionListener {
 			System.out.println("Exception caught: " + ex);
 			System.exit(0);
 		}
-
-		System.out.println("\n\nEND OF PARSE\n\n");
-
 		return (request_type);
 	}
 

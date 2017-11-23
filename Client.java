@@ -305,17 +305,8 @@ public class Client {
 			if (parse_server_response() != 200)
 				System.out.println("Invalid Server Response");
 			else {
-				// print options
-				System.out.println("\nOPTIONS MESSAGE CAME IN\n");
-				
-				// stop the timer
-				// timer.stop();
-
 				// set state back
 				state = tmpState;
-				
-				// exit
-				System.exit(0);
 			}
 		}
 	}
