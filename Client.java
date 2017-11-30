@@ -5,6 +5,7 @@
 
 import java.io.*;
 import java.net.*;
+import java.text.DecimalFormat;
 import java.util.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -26,6 +27,11 @@ public class Client {
 	JPanel buttonPanel = new JPanel();
 	JLabel iconLabel = new JLabel();
 	ImageIcon icon;
+	
+	// info panel
+	JPanel infoPanel = new JPanel();
+	JLabel lostPacketLabel = new JLabel("Lost Packets");
+	JLabel lostPacketProcentLabel = new JLabel("Lost Percentage");
 
 	// RTP variables:
 	// ----------------
@@ -61,6 +67,13 @@ public class Client {
 	// ------------------
 	static int MJPEG_TYPE = 26; // RTP payload type for MJPEG video
 
+	static int lostPackages = 0;
+
+	static int lastSequenceNumber = 0;
+	static int timerCounter = 0;
+	
+	private static DecimalFormat df = new DecimalFormat(".00");
+	
 	// --------------------------
 	// Constructor
 	// --------------------------
@@ -84,6 +97,10 @@ public class Client {
 		buttonPanel.add(describeButton);
 		buttonPanel.add(optionsButton);
 		buttonPanel.add(tearButton);
+		
+		infoPanel.add(lostPacketLabel);
+		infoPanel.add(lostPacketProcentLabel);
+		
 		setupButton.addActionListener(new setupButtonListener());
 		playButton.addActionListener(new playButtonListener());
 		pauseButton.addActionListener(new pauseButtonListener());
@@ -98,9 +115,14 @@ public class Client {
 		mainPanel.setLayout(null);
 		mainPanel.add(iconLabel);
 		mainPanel.add(buttonPanel);
+		
+		mainPanel.add(infoPanel);
+		
 		iconLabel.setBounds(0, 0, 380, 280);
 		buttonPanel.setBounds(0, 280, 380, 50);
 
+		infoPanel.setBounds(0, 400, 400, 50);
+		
 		f.getContentPane().add(mainPanel, BorderLayout.CENTER);
 		f.setSize(new Dimension(390, 370));
 		f.setVisible(true);
@@ -354,6 +376,8 @@ public class Client {
 	class timerListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
 
+			timerCounter++;
+			
 			// Construct a DatagramPacket to receive data from the UDP socket
 			rcvdp = new DatagramPacket(buf, buf.length);
 
@@ -370,6 +394,18 @@ public class Client {
 				RTPpacket rtp_packet = new RTPpacket(rcvdp.getData(),
 						rcvdp.getLength());
 
+				// add lost packages
+				lostPackages += rtp_packet.getsequencenumber() - lastSequenceNumber - 1;
+				
+				if(timerCounter >= 50){
+					lostPacketLabel.setText("Lost Packages: " + lostPackages);
+					lostPacketProcentLabel.setText("Lost Packages in percent: " + df.format(((double)lostPackages/(double)rtp_packet.getsequencenumber())*100) + "%");
+					timerCounter = 0;
+				}
+				
+				// update last sequence number
+				lastSequenceNumber = rtp_packet.getsequencenumber();
+						
 				// print important header fields of the RTP packet received:
 				System.out.println("Got RTP packet with SeqNum # "
 						+ rtp_packet.getsequencenumber() + " TimeStamp "
@@ -404,7 +440,7 @@ public class Client {
 	// ------------------------------------
 	private int parse_server_response() {
 		int reply_code = 0;
-
+		
 		try {
 			// parse status line and extract the reply_code:
 			String StatusLine = RTSPBufferedReader.readLine();

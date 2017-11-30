@@ -28,7 +28,7 @@ public class Server extends JFrame implements ActionListener {
 
 	// packetLoss stuff
 	Random random = new Random();
-	static double packetLoss = 0.0;
+	static double packetLoss = 0.1;
 	static int sliderPosition = 10;
 	
 	// GUI:
@@ -249,7 +249,7 @@ public class Server extends JFrame implements ActionListener {
 				byte[] packet_bits = new byte[packet_length];
 				rtp_packet.getpacket(packet_bits);
 
-				System.out.println("Slider: " + sliderPosition);
+				//System.out.println("Slider: " + sliderPosition);
 				
 				// simulate packet loss
 				if (random.nextDouble() > packetLoss) {
