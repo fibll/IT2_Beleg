@@ -118,6 +118,7 @@ public class Server extends JFrame implements ActionListener {
 	// main
 	// ------------------------------------
 	public static void main(String argv[]) throws Exception {
+		
 		// create a Server object
 		Server theServer = new Server();
 
