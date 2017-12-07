@@ -383,9 +383,6 @@ public class Client {
 
 			try {
 				// receive the DP from the socket:
-
-				// System.out.println("\n\ntest\n\n");
-
 				RTPsocket.receive(rcvdp);
 
 				// System.out.println("\n\ntest   2\n\n");
@@ -427,8 +424,32 @@ public class Client {
 				// display the image as an ImageIcon object
 				icon = new ImageIcon(image);
 				iconLabel.setIcon(icon);
+
 			} catch (InterruptedIOException iioe) {
 				// System.out.println("Nothing to read");
+			} catch (IOException ioe) {
+				System.out.println("Exception caught: " + ioe);
+			}
+
+							// =========================================
+				// done with picture now comes the fec
+				
+			try {					
+				// receive the DP from the socket:
+				RTPsocket.receive(rcvdp);
+				
+				// create an RTPpacket object from the DP
+				RTPpacket rtp_packet = new RTPpacket(rcvdp.getData(),
+				rcvdp.getLength());
+
+				// print important header fields of the RTP packet received:
+				System.out.println("Got RTP(FEC) packet with SeqNum # "
+				+ rtp_packet.getsequencenumber() + " TimeStamp "
+				+ rtp_packet.gettimestamp() + " ms, of type "
+				+ rtp_packet.getpayloadtype());
+				// =========================================
+			} catch (InterruptedIOException iioe) {
+				 System.out.println("FEC not read!");
 			} catch (IOException ioe) {
 				System.out.println("Exception caught: " + ioe);
 			}

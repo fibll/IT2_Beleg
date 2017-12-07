@@ -30,15 +30,15 @@ public class FECpacket
     // ----------------------------------------------
     
     // speichert Nutzdaten zur FEC-Berechnung
-    public void setdata( byte[] data, int data_length) {
+    public void setData( byte[] data) {
         // new data longer then the data before?
-        if(data_length > maxLength) {
-            maxLength = data_length;
+        if(data.length > maxLength) {
+            maxLength = data.length;
 
             // modify fecstack so it is long enough
             tmp = Arrays.copyOf(fecstack, fecstack.length);
             fecstack = new byte[maxLength];
-            System.arraycopy(tmp, 0, fecstack, 0, tmp.length); 
+            System.arraycopy(tmp, 0, fecstack, 0, tmp.length);
         }
 
         // get new mediastack array big enough
@@ -53,10 +53,22 @@ public class FECpacket
             fecstack[i] ^= mediastack[i];
         }
     }
+
+    public void printArray(byte[] data) {
+        System.out.println("\n\nArray: ");
+        for(int i = 0; i < data.length; i++) {
+            System.out.print("" + data[i] + " ");
+        }
+    }
     
     // holt fertiges FEC-Paket, Rückgabe: Paketlänge 
-    public byte[] getdata() {
+    public byte[] getData() {
         return fecstack;
+    }
+
+    // clear fec array
+    public void clearData() {
+        fecstack = new byte[maxLength];
     }
     
 
@@ -67,17 +79,17 @@ public class FECpacket
 
     /*
     // speichert UDP-Payload, Nr. des Bildes
-    public void rcvdata( int nr, byte[] data) {
+    public void rcvData( int nr, byte[] data) {
         ;
     }
 
     // speichert FEC-Daten, Nr. eines Bildes der Gruppe    
-    public void rcvfec( int nr, byte[] data) {
+    public void rcvFec( int nr, byte[] data) {
         ;
     }
     
     // übergibt vorhandenes/korrigiertes Paket oder Fehler (null)    
-    public byte[] getjpeg( int nr) {
+    public byte[] getJpeg( int nr) {
         
     }
     
@@ -86,4 +98,23 @@ public class FECpacket
         
     }
     */
+
+    public static void main(String argv[]) throws Exception {
+        
+        FECpacket fecPacket = new FECpacket();
+                
+        byte[] arr2 = {0,1,0,1,0,1,0,1,0,1,0};
+        byte[] arr1 = {1,0,1,0,1,1,1,0,1,0,1,1,1,1,1,1}; 
+        byte[] arr4 = {1};
+                
+        fecPacket.printArray(arr1);
+        fecPacket.printArray(arr2);
+
+        fecPacket.setData(arr1);
+        fecPacket.setData(arr2);
+        fecPacket.setData(arr4);
+
+        byte[] arr3 = fecPacket.getData();
+        fecPacket.printArray(arr3);
+    }
 }
