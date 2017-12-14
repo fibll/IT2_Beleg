@@ -77,7 +77,7 @@ public class Server extends JFrame implements ActionListener {
 
 	// FEC Variables
 	// ----------------
-	int fecValue = 10;
+	int fecValue = 5;	// NOT BIGGER THEN 20! because of available memoryspace
 	FECpacket fecPacket = new FECpacket();
 	static int FEC_TYPE = 127; // RTP payload type for FEC
 	

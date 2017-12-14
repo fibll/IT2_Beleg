@@ -102,7 +102,8 @@ public class FECpacket
     public static void main(String argv[]) throws Exception {
         
         FECpacket fecPacket = new FECpacket();
-                
+        
+        /*
         byte[] arr2 = {0,1,0,1,0,1,0,1,0,1,0};
         byte[] arr1 = {1,0,1,0,1,1,1,0,1,0,1,1,1,1,1,1}; 
         byte[] arr4 = {1};
@@ -116,5 +117,21 @@ public class FECpacket
 
         byte[] arr3 = fecPacket.getData();
         fecPacket.printArray(arr3);
+        */
+
+
+        byte[][] arr0 = new byte[2][];
+
+        byte[] tmp1 = {0,0,0,0};
+        byte[] tmp2 = {0,0,0,0,0,0,0,0};
+
+        arr0[0] = new byte[4];
+        arr0[0] = Arrays.copyOf(tmp1, tmp1.length);
+
+        arr0[1] = new byte[8];
+        arr0[1] = Arrays.copyOf(tmp2, tmp2.length);
+
+        fecPacket.printArray(arr0[0]);
+        fecPacket.printArray(arr0[1]);
     }
 }

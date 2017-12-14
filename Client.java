@@ -79,6 +79,11 @@ public class Client {
 	// ------------------
 	int fecValue = 0;	// aka k
 
+	// the array should have k-times of undefinded (yet) length of byte[]
+	// And cause it got a delay of k-pictures it would be easy to have this array doubled
+	//  byte[2][k][unknown(yet)]
+	byte[][][] pictureBuffer;
+	byte[] fecData;
 
 
 	// --------------------------
@@ -136,7 +141,8 @@ public class Client {
 
 		// init timer
 		// --------------------------
-		timer = new Timer(20, new timerListener());
+		// time is half as long as the original one, to catch every fec packet
+		timer = new Timer(10, new timerListener());
 		timer.setInitialDelay(0);
 		timer.setCoalesce(true);
 
@@ -400,9 +406,16 @@ public class Client {
 				if(rtp_packet.getpayloadtype() == 127){
 					System.out.println("\n\nReceived payload type 127");
 
-					//byte[] buf_temp = new byte[15000];
-					//rtp_packet.getpayload(buf_temp);
-					//System.out.println("Payload: " + buf_temp + "\n\n");
+
+					// if there is something to correct:
+						// do the correction stuff
+
+
+					// switch the currentBufferIndex
+
+
+					// if all pictures where corrected remove k old pictures from buffer
+
 					return;
 				}
 
@@ -427,6 +440,11 @@ public class Client {
 				// print header bitstream:
 				rtp_packet.printheader();
 
+				// ==================================
+				// do this to get the payload into pictureBuffer[]
+				// how to fix the problem with the length?
+				// => pictureBuffer[circle-index][k-index][length]
+
 				// get the payload bitstream from the RTPpacket object
 				int payload_length = rtp_packet.getpayload_length();
 				byte[] payload = new byte[payload_length];
@@ -434,6 +452,9 @@ public class Client {
 
 				// get an Image object from the payload bitstream
 				Toolkit toolkit = Toolkit.getDefaultToolkit();
+
+				// ==================================
+				// FIX: create image with data of pictureBuffer[]
 				Image image = toolkit.createImage(payload, 0, payload_length);
 
 				// display the image as an ImageIcon object
@@ -516,7 +537,9 @@ public class Client {
 
 					// get fecValue from server
 					fecValue = Integer.parseInt(RTSPBufferedReader.readLine());
-					System.out.println("\n fecValue: " + fecValue + " \n");					
+
+					// init pictureBuffer
+					pictureBuffer = new byte[2][fecValue][];		
 
 				} else {
 
