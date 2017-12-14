@@ -431,7 +431,7 @@ public class Client {
 				System.out.println("Exception caught: " + ioe);
 			}
 
-							// =========================================
+				// =========================================
 				// done with picture now comes the fec
 				
 			try {					

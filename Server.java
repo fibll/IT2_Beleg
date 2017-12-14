@@ -187,6 +187,13 @@ public class Server extends JFrame implements ActionListener {
 
 				// send back response
 				theServer.send_RTSP_response(request_type);
+			} else if (request_type == TEARDOWN) {
+				// send back response
+				theServer.send_RTSP_response(request_type);
+				// stop timer
+				theServer.timer.stop();
+				
+				System.exit(0);
 			}
 		}
 
@@ -302,7 +309,7 @@ public class Server extends JFrame implements ActionListener {
 					// wait FRAME_PERIOD/10
 					Thread.sleep(FRAME_PERIOD/5);
 
-					// send packet
+					// get fec value
 					byte[] fecBuf = fecPacket.getData();
 
 					//System.out.println("\n\nbuf_length" + fecBuf.length + "\n\n");					
