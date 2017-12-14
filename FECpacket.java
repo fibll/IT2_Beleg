@@ -30,7 +30,7 @@ public class FECpacket
     // ----------------------------------------------
     
     // speichert Nutzdaten zur FEC-Berechnung
-    public void setData( byte[] data) {
+    public void setData(byte[] data) {
         // new data longer then the data before?
         if(data.length > maxLength) {
             maxLength = data.length;

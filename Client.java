@@ -74,6 +74,13 @@ public class Client {
 	
 	private static DecimalFormat df = new DecimalFormat(".00");
 	
+
+	// FEC Variables
+	// ------------------
+	int fecValue = 0;	// aka k
+
+
+
 	// --------------------------
 	// Constructor
 	// --------------------------
@@ -385,11 +392,19 @@ public class Client {
 				// receive the DP from the socket:
 				RTPsocket.receive(rcvdp);
 
-				// System.out.println("\n\ntest   2\n\n");
-
 				// create an RTPpacket object from the DP
 				RTPpacket rtp_packet = new RTPpacket(rcvdp.getData(),
 						rcvdp.getLength());
+
+				// catch rtp packets with an payload type of 127
+				if(rtp_packet.getpayloadtype() == 127){
+					System.out.println("\n\nReceived payload type 127");
+
+					//byte[] buf_temp = new byte[15000];
+					//rtp_packet.getpayload(buf_temp);
+					//System.out.println("Payload: " + buf_temp + "\n\n");
+					return;
+				}
 
 				// add lost packages
 				lostPackages += rtp_packet.getsequencenumber() - lastSequenceNumber - 1;
@@ -433,7 +448,7 @@ public class Client {
 
 				// =========================================
 				// done with picture now comes the fec
-				
+				/*
 			try {					
 				// receive the DP from the socket:
 				RTPsocket.receive(rcvdp);
@@ -452,7 +467,7 @@ public class Client {
 				 System.out.println("FEC not read!");
 			} catch (IOException ioe) {
 				System.out.println("Exception caught: " + ioe);
-			}
+			}*/
 		}
 	}
 
@@ -473,31 +488,56 @@ public class Client {
 			reply_code = Integer.parseInt(tokens.nextToken());
 
 			// if reply code is OK get and print the 2 other lines
-			if (reply_code == 200 && state != DESCRIBE) {
-				String SeqNumLine = RTSPBufferedReader.readLine();
-				System.out.println(SeqNumLine);
-
-				// special for options
-				String SessionLine = RTSPBufferedReader.readLine();
-				System.out.println(SessionLine);
-
-				// if state == INIT gets the Session Id from the SessionLine
-				if (state == INIT) {
-					System.out.println("\n STATE == INIT \n");
-
-					tokens = new StringTokenizer(SessionLine);
-					tokens.nextToken(); // skip over the Session:
-					RTSPid = Integer.parseInt(tokens.nextToken());
-				}
-
-				// if state == DESCRIBE gets more lines then usual planed
-			} else if (reply_code == 200){
-				{
+			if (reply_code == 200) {
+				if(state == DESCRIBE){
+			
+					// if state == DESCRIBE gets more lines then usual planed
 					for (int i = 0; i < 3; i++) {
 						System.out.println(RTSPBufferedReader.readLine());
 					}
+				
+				} else if(state == INIT) {
+					
+					String SeqNumLine = RTSPBufferedReader.readLine();
+					System.out.println(SeqNumLine);
+
+					// special for options
+					String SessionLine = RTSPBufferedReader.readLine();
+					System.out.println(SessionLine);
+
+					// if state == INIT gets the Session Id from the SessionLine
+					if (state == INIT) {
+						System.out.println("\n STATE == INIT \n");
+
+						tokens = new StringTokenizer(SessionLine);
+						tokens.nextToken(); // skip over the Session:
+						RTSPid = Integer.parseInt(tokens.nextToken());
+					}
+
+					// get fecValue from server
+					fecValue = Integer.parseInt(RTSPBufferedReader.readLine());
+					System.out.println("\n fecValue: " + fecValue + " \n");					
+
+				} else {
+
+					String SeqNumLine = RTSPBufferedReader.readLine();
+					System.out.println(SeqNumLine);
+
+					// special for options
+					String SessionLine = RTSPBufferedReader.readLine();
+					System.out.println(SessionLine);
+
+					// if state == INIT gets the Session Id from the SessionLine
+					if (state == INIT) {
+						System.out.println("\n STATE == INIT \n");
+
+						tokens = new StringTokenizer(SessionLine);
+						tokens.nextToken(); // skip over the Session:
+						RTSPid = Integer.parseInt(tokens.nextToken());
+					}
 				}
 			}
+
 		} catch (Exception ex) {
 			System.out.println("Exception caught: " + ex);
 			System.exit(0);

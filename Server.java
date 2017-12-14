@@ -440,12 +440,19 @@ public class Server extends JFrame implements ActionListener {
 				RTSPBufferedWriter.write("Content-Base: " + VideoFileName + CRLF);
 				RTSPBufferedWriter.write("Content-Type: application/sdp" + CRLF);
 				RTSPBufferedWriter.write("Content-Length: " + VIDEO_LENGTH + CRLF);
-				
-				
+					
+			} else if(request_type == SETUP){
+				RTSPBufferedWriter.write("CSeq: " + RTSPSeqNb + CRLF);
+				RTSPBufferedWriter.write("Session: " + RTSP_ID + CRLF);
+
+				// new value "fecValue" for Setup
+				RTSPBufferedWriter.write("" + fecValue + CRLF);
+			
 			} else {
 				RTSPBufferedWriter.write("CSeq: " + RTSPSeqNb + CRLF);
 				RTSPBufferedWriter.write("Session: " + RTSP_ID + CRLF);
 			}
+
 
 			RTSPBufferedWriter.flush();
 			System.out.println("RTSP Server - Sent response to Client.");
