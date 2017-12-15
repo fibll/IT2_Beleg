@@ -83,6 +83,7 @@ public class Client {
 	// And cause it got a delay of k-pictures it would be easy to have this array doubled
 	//  byte[2][k][unknown(yet)]
 	byte[][][] pictureBuffer;
+	int pictureBufferSide = 0;
 	byte[] fecData;
 
 
@@ -406,7 +407,7 @@ public class Client {
 				if(rtp_packet.getpayloadtype() == 127){
 					System.out.println("\n\nReceived payload type 127");
 
-
+					// ==================================
 					// if there is something to correct:
 						// do the correction stuff
 
@@ -415,6 +416,13 @@ public class Client {
 
 
 					// if all pictures where corrected remove k old pictures from buffer
+
+
+					// switch pictureBuffer side
+					if(pictureBufferSide == 0)
+						pictureBufferSide = 1;
+					else
+						pictureBufferSide = 0;
 
 					return;
 				}
@@ -441,9 +449,19 @@ public class Client {
 				rtp_packet.printheader();
 
 				// ==================================
-				// do this to get the payload into pictureBuffer[]
-				// how to fix the problem with the length?
+				// get the payload into pictureBuffer[]
 				// => pictureBuffer[circle-index][k-index][length]
+				int fecIndex = (rtp_packet.getsequencenumber()-1) % fecValue;
+				pictureBuffer[pictureBufferSide]
+							 [fecIndex]
+							  = new byte[rtp_packet.getpayload_length()];
+				rtp_packet.getpayload(pictureBuffer[pictureBufferSide][fecIndex]);
+				System.out.println("side: " + pictureBufferSide + " fecIndex: " + fecIndex);
+				
+
+
+				// ==================================
+				// show to the right time
 
 				// get the payload bitstream from the RTPpacket object
 				int payload_length = rtp_packet.getpayload_length();
@@ -454,8 +472,10 @@ public class Client {
 				Toolkit toolkit = Toolkit.getDefaultToolkit();
 
 				// ==================================
-				// FIX: create image with data of pictureBuffer[]
-				Image image = toolkit.createImage(payload, 0, payload_length);
+				// create image with data of pictureBuffer[]
+				Image image = toolkit.createImage(pictureBuffer[pictureBufferSide][fecIndex]
+									, 0
+									, pictureBuffer[pictureBufferSide][fecIndex].length);
 
 				// display the image as an ImageIcon object
 				icon = new ImageIcon(image);
