@@ -11,6 +11,7 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.Timer;
+import java.lang.Math;
 
 public class Client {
 
@@ -84,6 +85,7 @@ public class Client {
 	//  byte[2][k][unknown(yet)]
 	byte[][][] pictureBuffer;
 	int pictureBufferSide = 0;
+	int pictureBufferSideReverse = 1;
 	byte[] fecData;
 
 
@@ -234,6 +236,9 @@ public class Client {
 	// -----------------------
 	class playButtonListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
+
+			// write 0s in pictureBuffer array
+			pictureBuffer = new byte[2][20][15000];
 
 			System.out.println("Play Button pressed !");
 
@@ -412,20 +417,30 @@ public class Client {
 						// do the correction stuff
 
 
-					// switch the currentBufferIndex
-
-
-					// if all pictures where corrected remove k old pictures from buffer
-
+					// if all pictures of the current write side where corrected: 
+					// remove k old pictures from the current read side of the buffer
+					pictureBuffer[pictureBufferSideReverse] = new byte[fecValue][15000];
 
 					// switch pictureBuffer side
-					if(pictureBufferSide == 0)
+					if(pictureBufferSide == 0){
 						pictureBufferSide = 1;
-					else
+						pictureBufferSideReverse = 0;
+					}
+					else {
 						pictureBufferSide = 0;
-
+						pictureBufferSideReverse = 1;
+					}
+					
 					return;
 				}
+				// if no mjpeg type either, return!
+				else if(rtp_packet.getpayloadtype() != 26){
+					System.out.println("\n\nFALSE PACKET\n\n");
+					return;
+				}
+
+				System.out.println("write into: " + pictureBufferSide + "read from: " + pictureBufferSideReverse);
+
 
 				// add lost packages
 				lostPackages += rtp_packet.getsequencenumber() - lastSequenceNumber - 1;
@@ -457,12 +472,7 @@ public class Client {
 							  = new byte[rtp_packet.getpayload_length()];
 				rtp_packet.getpayload(pictureBuffer[pictureBufferSide][fecIndex]);
 				System.out.println("side: " + pictureBufferSide + " fecIndex: " + fecIndex);
-				
-
-
-				// ==================================
-				// show to the right time
-
+								
 				// get the payload bitstream from the RTPpacket object
 				int payload_length = rtp_packet.getpayload_length();
 				byte[] payload = new byte[payload_length];
@@ -472,14 +482,18 @@ public class Client {
 				Toolkit toolkit = Toolkit.getDefaultToolkit();
 
 				// ==================================
-				// create image with data of pictureBuffer[]
-				Image image = toolkit.createImage(pictureBuffer[pictureBufferSide][fecIndex]
-									, 0
-									, pictureBuffer[pictureBufferSide][fecIndex].length);
-
-				// display the image as an ImageIcon object
-				icon = new ImageIcon(image);
-				iconLabel.setIcon(icon);
+				// show to the right time
+				if(rtp_packet.SequenceNumber >= fecValue){
+					// create image with data of pictureBuffer[]
+					System.out.println("fecIndex: " + fecIndex);
+					Image image = toolkit.createImage(pictureBuffer[pictureBufferSideReverse][fecIndex]
+										, 0
+										, pictureBuffer[pictureBufferSideReverse][fecIndex].length);
+					
+					// display the image as an ImageIcon object
+					icon = new ImageIcon(image);
+					iconLabel.setIcon(icon);
+				}
 
 			} catch (InterruptedIOException iioe) {
 				// System.out.println("Nothing to read");
