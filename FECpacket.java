@@ -8,6 +8,7 @@ public class FECpacket
     byte[] fecstack;   // Puffer für FEC-Pakete
     byte[] tmp;
     int maxLength = 1;
+    int correctedPictures = 0;
 
     // copy an array into a bigger one but keep the zeros in the bigger one
 	//System.arraycopy(source, 0, destination, 0, source.length);
@@ -21,7 +22,7 @@ public class FECpacket
 
     // RECEIVER ------------------------------------
     public FECpacket(int FEC_group) {
-        ;
+        this.FEC_group = FEC_group;
     }
         
     
@@ -55,10 +56,11 @@ public class FECpacket
     }
 
     public void printArray(byte[] data) {
-        System.out.println("\n\nArray: ");
+        System.out.println("Array: ");
         for(int i = 0; i < data.length; i++) {
             System.out.print("" + data[i] + " ");
         }
+        System.out.println("\n");
     }
     
     // holt fertiges FEC-Paket, Rückgabe: Paketlänge 
@@ -87,27 +89,96 @@ public class FECpacket
     public void rcvFec( int nr, byte[] data) {
         ;
     }
-    
+    */
     // übergibt vorhandenes/korrigiertes Paket oder Fehler (null)    
-    public byte[] getJpeg( int nr) {
-        
+    public byte[] getJpeg(int index, byte[][] buffer, byte[] fecEndValue) {
+        byte[] fec_tmp = new byte[15000];
+
+        // calc fec values up to index
+        // for
+        for(int i = 0; i < index; i++){
+            setData(buffer[i]);
+            printArray(buffer[i]);
+            printArray(fecstack);
+        }
+
+        // System.out.println("\n\nFEC Before:");
+        // printArray(fecstack);
+
+        fec_tmp = Arrays.copyOf(fecstack, fecstack.length);
+
+        // calc fec value from end to index
+        fecstack = Arrays.copyOf(fecEndValue, fecEndValue.length);
+
+        for(int i = buffer.length - 1; i > index; i--){
+            // calculate backwards
+            // set fecstack to fecEndValue
+
+            setData(buffer[i]);
+        }
+
+        // System.out.println("\n\nFEC After:");
+        // printArray(fecstack);
+
+
+        // calc picture data (index) with the two fec values
+            // guarantee that the packages are the same size
+            if(fec_tmp.length > fecstack.length){
+                tmp = Arrays.copyOf(fecstack, fecstack.length);
+                fecstack = new byte[fec_tmp.length];
+               	System.arraycopy(tmp, 0, fecstack, 0, tmp.length);
+            }
+            else{
+                tmp = Arrays.copyOf(fec_tmp, fec_tmp.length);
+                fec_tmp = new byte[fecstack.length];
+               	System.arraycopy(tmp, 0, fec_tmp, 0, tmp.length);
+            }
+
+            // XOR
+            for(int i = 0; i < maxLength; i++) {
+                fecstack[i] ^= fec_tmp[i];
+            }
+
+        correctedPictures++;
+
+        return fecstack;
     }
     
     // für Statistik, Anzahl der korrigierten Pakete
     public int getNrCorrected() {
-        
+        return correctedPictures;        
     }
-    */
 
     public static void main(String argv[]) throws Exception {
         
         FECpacket fecPacket = new FECpacket();
         
-        /*
-        byte[] arr2 = {0,1,0,1,0,1,0,1,0,1,0};
-        byte[] arr1 = {1,0,1,0,1,1,1,0,1,0,1,1,1,1,1,1}; 
+        byte[] arr1 = {1,1,1,1,1};         
+        byte[] arr2 = {0,1,0,1,1,0};
+        byte[] arr3 = {1,1,0,1};
         byte[] arr4 = {1};
-                
+
+        fecPacket.setData(arr1);
+        fecPacket.setData(arr2);
+        fecPacket.setData(arr3);
+        fecPacket.setData(arr4);
+        byte[] fec = fecPacket.getData();
+        //fecPacket.printArray(fec);
+
+        fecPacket.clearData();
+
+        byte[][] buffer = new byte[4][10];
+        buffer[0] = Arrays.copyOf(arr1, arr1.length);
+        buffer[1] = Arrays.copyOf(arr2, arr2.length);
+        buffer[2] = Arrays.copyOf(arr3, arr3.length);
+        buffer[3] = new byte[10];//Arrays.copyOf(arr4, arr4.length);
+
+        byte[] missing = fecPacket.getJpeg(3, buffer, fec);
+        System.out.println("\n\nMissing:");
+        fecPacket.printArray(missing);
+        
+
+        /*
         fecPacket.printArray(arr1);
         fecPacket.printArray(arr2);
 
@@ -118,20 +189,5 @@ public class FECpacket
         byte[] arr3 = fecPacket.getData();
         fecPacket.printArray(arr3);
         */
-
-
-        byte[][] arr0 = new byte[2][];
-
-        byte[] tmp1 = {0,0,0,0};
-        byte[] tmp2 = {0,0,0,0,0,0,0,0};
-
-        arr0[0] = new byte[4];
-        arr0[0] = Arrays.copyOf(tmp1, tmp1.length);
-
-        arr0[1] = new byte[8];
-        arr0[1] = Arrays.copyOf(tmp2, tmp2.length);
-
-        fecPacket.printArray(arr0[0]);
-        fecPacket.printArray(arr0[1]);
     }
 }
