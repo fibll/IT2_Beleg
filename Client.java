@@ -68,25 +68,28 @@ public class Client {
 	// ------------------
 	static int MJPEG_TYPE = 26; // RTP payload type for MJPEG video
 
-	static int lostPackages = 0;
-
 	static int lastSequenceNumber = 0;
 	static int timerCounter = 0;
 	
+
+
+	static int lostPackages = 0;
+	static int fecWavePackages = 0;
 	private static DecimalFormat df = new DecimalFormat(".00");
 	
 
 	// FEC Variables
 	// ------------------
-	int fecValue = 0;	// aka k
+	static int fecValue = 0;	// aka k
 
 	// the array should have k-times of undefinded (yet) length of byte[]
 	// And cause it got a delay of k-pictures it would be easy to have this array doubled
 	//  byte[2][k][unknown(yet)]
-	byte[][][] pictureBuffer;
-	int pictureBufferSide = 0;
-	int pictureBufferSideReverse = 1;
-	byte[] fecData;
+	static byte[][][] pictureBuffer;
+	static int pictureBufferSide = 0;
+	static int pictureBufferSideReverse = 1;
+	static byte[] fecData;
+	static int indexMissingPicture = -1;
 
 
 	// --------------------------
@@ -228,6 +231,10 @@ public class Client {
 					state = READY;
 					System.out.println("New RTSP state: READY");
 				}
+
+				// write 0s in pictureBuffer array
+				pictureBuffer = new byte[2][fecValue][15000];
+
 			}// else if state != INIT then do nothing
 		}
 	}
@@ -236,9 +243,6 @@ public class Client {
 	// -----------------------
 	class playButtonListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
-
-			// write 0s in pictureBuffer array
-			pictureBuffer = new byte[2][20][15000];
 
 			System.out.println("Play Button pressed !");
 
@@ -414,8 +418,24 @@ public class Client {
 
 					// ==================================
 					// if there is something to correct:
-						// do the correction stuff
+					if(fecWavePackages < fecValue){
+						System.out.println("Packege/s got lost");
 
+						// and it is just one package missing
+						if(fecWavePackages < (fecValue -1)){
+							System.out.println("Lost at least two Packages");
+						}
+						else{
+							// do the correction stuff
+							if(indexMissingPicture == -1)
+								indexMissingPicture = fecValue - 1;
+
+							System.out.println("Package " + (indexMissingPicture) + " got lost!");							
+
+							// calculate fec up to the missing picture
+							
+						}
+					}
 
 					// if all pictures of the current write side where corrected: 
 					// remove k old pictures from the current read side of the buffer
@@ -430,6 +450,10 @@ public class Client {
 						pictureBufferSide = 0;
 						pictureBufferSideReverse = 1;
 					}
+
+					// set fecWavePackage counter to 0
+					fecWavePackages = 0;
+					indexMissingPicture = -1;
 					
 					return;
 				}
@@ -439,13 +463,20 @@ public class Client {
 					return;
 				}
 
-				System.out.println("write into: " + pictureBufferSide + "read from: " + pictureBufferSideReverse);
+				// set fecIndex
+				int fecIndex = (rtp_packet.getsequencenumber()-1) % fecValue;
 
+				// count fec wave packages
+				fecWavePackages++;
+				if(indexMissingPicture == -1 && fecWavePackages != fecIndex + 1){
+					indexMissingPicture = fecIndex - 1;
+				}
 
 				// add lost packages
 				lostPackages += rtp_packet.getsequencenumber() - lastSequenceNumber - 1;
+
 				
-				if(timerCounter >= 50){
+				if(timerCounter >= 100){
 					lostPacketLabel.setText("Lost Packages: " + lostPackages);
 					lostPacketProcentLabel.setText("Lost Packages in percent: " + df.format(((double)lostPackages/(double)rtp_packet.getsequencenumber())*100) + "%");
 					timerCounter = 0;
@@ -466,7 +497,6 @@ public class Client {
 				// ==================================
 				// get the payload into pictureBuffer[]
 				// => pictureBuffer[circle-index][k-index][length]
-				int fecIndex = (rtp_packet.getsequencenumber()-1) % fecValue;
 				pictureBuffer[pictureBufferSide]
 							 [fecIndex]
 							  = new byte[rtp_packet.getpayload_length()];
@@ -485,7 +515,6 @@ public class Client {
 				// show to the right time
 				if(rtp_packet.SequenceNumber >= fecValue){
 					// create image with data of pictureBuffer[]
-					System.out.println("fecIndex: " + fecIndex);
 					Image image = toolkit.createImage(pictureBuffer[pictureBufferSideReverse][fecIndex]
 										, 0
 										, pictureBuffer[pictureBufferSideReverse][fecIndex].length);
