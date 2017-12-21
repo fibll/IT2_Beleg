@@ -77,7 +77,7 @@ public class Server extends JFrame implements ActionListener {
 
 	// FEC Variables
 	// ----------------
-	int fecValue = 5;	// NOT BIGGER THEN 20! because of available memoryspace
+	int fecValue = 2;	// NOT BIGGER THEN 20! because of available memoryspace
 	FECpacket fecPacket = new FECpacket();
 	static int FEC_TYPE = 127; // RTP payload type for FEC
 	
@@ -128,11 +128,7 @@ public class Server extends JFrame implements ActionListener {
 	public static void main(String argv[]) throws Exception {
 
 		FECpacket fecPacket = new FECpacket();
-
-		byte[] arr1 = {0,1,0,1,0,1,0,1,0,1,0};
-		byte[] arr2 = {1,0,1,0,1,1,1,0,1,0,1};
-
-		fecPacket.printArray(arr1);
+		// fecPacket.printArray(arr1);
 
 		// create a Server object
 		Server theServer = new Server();
@@ -278,7 +274,13 @@ public class Server extends JFrame implements ActionListener {
 
 				// =================
 				// calculate the new fec value
-				fecPacket.setData(Arrays.copyOf(buf, image_length));
+				// if(imagenb <= 10)	
+				// 	fecPacket.printFew(buf);
+
+				fecPacket.setDataFixedSize(Arrays.copyOf(buf, image_length));
+				
+				// if(imagenb <= 10)
+				// 	fecPacket.printFew(fecPacket.getData());
 				// =================
 
 
@@ -293,7 +295,11 @@ public class Server extends JFrame implements ActionListener {
 							ClientIPAddr, RTP_dest_port);
 					RTPsocket.send(senddp);
 					//System.out.println("Sequencenumber: " + imagenb);
-		        }
+				}
+				else{
+					//System.out.println("Lost Package: ");
+					fecPacket.printFew(buf);
+				}
 
 				// System.out.println("Send frame #"+imagenb);
 				// print the header bitstream
@@ -302,7 +308,8 @@ public class Server extends JFrame implements ActionListener {
 				// update GUI
 				label.setText("Send frame #" + imagenb);
 
-				
+
+				// send fec packet
 				// =================
 				if((imagenb % fecValue) == 0){
 					
@@ -311,7 +318,6 @@ public class Server extends JFrame implements ActionListener {
 
 					// get fec value
 					byte[] fecBuf = fecPacket.getData();
-
 					//System.out.println("\n\nbuf_length" + fecBuf.length + "\n\n");					
 
 					// prepare packet
