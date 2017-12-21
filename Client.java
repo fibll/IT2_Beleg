@@ -499,7 +499,7 @@ public class Client {
 					// remove k old pictures from the current read side of the buffer
 					// if is for debug
 					if(showCorrected != 1)
-						pictureBuffer[pictureBufferSideReverse] = new byte[fecValue][15000];
+						//pictureBuffer[pictureBufferSideReverse] = new byte[fecValue][15000];
 
 					// switch pictureBuffer side
 					if(pictureBufferSide == 0){
@@ -672,7 +672,7 @@ public class Client {
 					fecValue = Integer.parseInt(RTSPBufferedReader.readLine());
 
 					// init pictureBuffer
-					pictureBuffer = new byte[2][fecValue][];		
+					//pictureBuffer = new byte[2][fecValue][];		
 
 				} else {
 
