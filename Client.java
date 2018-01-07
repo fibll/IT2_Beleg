@@ -126,6 +126,7 @@ public class Client {
 		buttonPanel.add(describeButton);
 		buttonPanel.add(optionsButton);
 		buttonPanel.add(tearButton);
+	
 		
 		infoPanel.add(lostPacketLabel);
 		infoPanel.add(lostPacketProcentLabel);
@@ -485,6 +486,7 @@ public class Client {
 							// ==================================
 							// test
 							//buf1 = Arrays.copyOf(pictureBuffer[pictureBufferSide][indexMissingPicture], pictureBuffer[pictureBufferSide][indexMissingPicture].length);
+							//buf1 = fecPacket.getJpeg(fecData);
 							// ==================================
 
 
@@ -498,8 +500,7 @@ public class Client {
 					// if all pictures of the current write side where corrected: 
 					// remove k old pictures from the current read side of the buffer
 					// if is for debug
-					if(showCorrected != 1)
-						//pictureBuffer[pictureBufferSideReverse] = new byte[fecValue][15000];
+					//pictureBuffer[pictureBufferSideReverse] = new byte[fecValue][15000];
 
 					// switch pictureBuffer side
 					if(pictureBufferSide == 0){
@@ -604,12 +605,13 @@ public class Client {
 						pictureBuffer[pictureBufferSideReverse][fecIndex]
 						, 0
 						, pictureBuffer[pictureBufferSideReverse][fecIndex].length);
+				/*
 
-				// Image image = toolkit.createImage(
-				// 		buf1
-				// 		, 0
-				// 		, buf1.length);
-				
+				 Image image = toolkit.createImage(
+				 		buf1
+				 		, 0
+				 		, buf1.length);
+				*/
 				// display the image as an ImageIcon object
 				icon = new ImageIcon(image);
 				iconLabel.setIcon(icon);
@@ -670,9 +672,6 @@ public class Client {
 
 					// get fecValue from server
 					fecValue = Integer.parseInt(RTSPBufferedReader.readLine());
-
-					// init pictureBuffer
-					//pictureBuffer = new byte[2][fecValue][];		
 
 				} else {
 
