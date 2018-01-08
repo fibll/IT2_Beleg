@@ -77,7 +77,7 @@ public class Server extends JFrame implements ActionListener {
 
 	// FEC Variables
 	// ----------------
-	int fecValue = 3;	// NOT BIGGER THEN 20! because of available memoryspace
+	int fecValue = 2;	// NOT BIGGER THEN 20! because of available memoryspace
 	FECpacket fecPacket = new FECpacket();
 	static int FEC_TYPE = 127; // RTP payload type for FEC
 	
@@ -291,7 +291,8 @@ public class Server extends JFrame implements ActionListener {
 				
 				// ==================================
 				//if (random.nextDouble() > packetLoss) {
-				if(imagenb % 3 != 0){
+				if(imagenb % 4 != 0){
+
 				// ==================================
 
 					// send the packet as a DatagramPacket over the UDP socket

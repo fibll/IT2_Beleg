@@ -87,11 +87,12 @@ public class FECpacket
     }
 
     public void printFew(byte[] data) {
-        System.out.println("Array: ");
+        //System.out.println("Array: ");
+        System.out.println("");
         for(int i = 1000; i < 1005; i++) {
             System.out.print("" + data[i] + " ");
         }
-        System.out.println("\n");
+        System.out.println("");
     }
 
     public byte[] getFew(byte[] data) {

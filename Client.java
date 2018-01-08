@@ -1,6 +1,8 @@
 /* ------------------
  Client
  usage: java Client [Server hostname] [Server RTSP listening port] [Video file requested]
+
+ FIX: show images also if no image was received
  ---------------------- */
 
 import java.io.*;
@@ -456,32 +458,38 @@ public class Client {
 
 					fecData = new byte[15000];
 					rtp_packet.getpayload(fecData);
-					fecPacket.printFew(fecData);
+					// fecPacket.printFew(fecData);
 
 					// ==================================
 					// if there is something to correct
 					// check also the fecEndValue of client and server
 					if(fecWaveReceiveCounter < fecValue){
-						System.out.println("Packege/s got lost");
+						System.out.println("Package/s got lost");
 
-						// and it is just one package missing
+						// and is just one package missing
 						if(fecWaveReceiveCounter < (fecValue -1)){
 							System.out.println("Lost at least two Packages");
 						}
 						else{
-							// do the correction stuff ---
+
+							// find out which picture did go missing
 
 							// if there is one missing but the index is not defined
 							// is has to be the last one
 							if(indexMissingPicture == -1)
 								indexMissingPicture = fecValue - 1;
 
-							System.out.println("Package " + (indexMissingPicture) + " got lost!");							
+
+							// do the correction stuff ---							
+
+							//System.out.println("Package " + (indexMissingPicture) + " got lost!");							
 
 							// calculate the missing picture						
 							pictureBuffer[writeBuffer][indexMissingPicture] = fecPacket.getJpeg(fecData);
 							
 							fecPacket.printFew(pictureBuffer[writeBuffer][indexMissingPicture]);
+
+							System.out.println("Write picture to: " + writeBuffer + ", " + indexMissingPicture);
 
 							// ==================================
 							// test
@@ -511,15 +519,16 @@ public class Client {
 					// set fecWavePackage counter to 0
 					fecWaveReceiveCounter = 0;
 
+					// reset indexMissingPicture
+					indexMissingPicture = -1;
+
 					// =====================
 					// test
 					// if is for debug
 					// if(showCorrected != 1)
-					// 	indexMissingPicture = -1;
 					// =====================
 					
 					//System.out.println("write: " + writeBuffer + "\nread: " + readBuffer);
-
 					return;
 				}
 				// if no mjpeg type either, return!
@@ -566,6 +575,8 @@ public class Client {
 						+ rtp_packet.gettimestamp() + " ms, of type "
 						+ rtp_packet.getpayloadtype());
 				
+				System.out.println("currentFecIndex: " + fecIndex);
+
 
 				// print header bitstream:
 				rtp_packet.printheader();
@@ -622,6 +633,18 @@ public class Client {
 
 				// update last sequence number
 				lastSequenceNumber = rtp_packet.getsequencenumber();
+
+
+				// ===============================
+				// debug
+				System.out.println("read: " + readBuffer + "index: " + fecIndex);
+				System.out.println("----------");
+				fecPacket.printFew(pictureBuffer[0][0]);
+				fecPacket.printFew(pictureBuffer[0][1]);
+				//fecPacket.printFew(pictureBuffer[1][0]);
+				//fecPacket.printFew(pictureBuffer[1][1]);
+				System.out.println("----------");
+				// ===============================
 
 			} catch (InterruptedIOException iioe) {
 				// System.out.println("Nothing to read");
