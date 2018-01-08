@@ -77,7 +77,7 @@ public class Client {
 
 
 	static int lostPackages = 0;
-	static int fecWavePackages = 0;
+	static int fecWaveReceiveCounter = 0;
 	private static DecimalFormat df = new DecimalFormat(".00");
 	
 
@@ -89,8 +89,8 @@ public class Client {
 	// And cause it got a delay of k-pictures it would be easy to have this array doubled
 	//  byte[2][k][unknown(yet)]
 	static byte[][][] pictureBuffer;
-	static int pictureBufferSide = 0;
-	static int pictureBufferSideReverse = 1;
+	static int writeBuffer = 0;
+	static int readBuffer = 1;
 	static byte[] fecData;
 	static int indexMissingPicture = -1;
 	FECpacket fecPacket = new FECpacket();
@@ -427,9 +427,9 @@ public class Client {
 				// 	Toolkit toolkit = Toolkit.getDefaultToolkit();
 
 				// 	// create image with data of pictureBuffer[]
-				// 	Image image = toolkit.createImage(pictureBuffer[pictureBufferSide][indexMissingPicture]
+				// 	Image image = toolkit.createImage(pictureBuffer[writeBuffer][indexMissingPicture]
 				// 						, 0
-				// 						, pictureBuffer[pictureBufferSide][indexMissingPicture].length);
+				// 						, pictureBuffer[writeBuffer][indexMissingPicture].length);
 					
 				// 	// display the image as an ImageIcon object
 				// 	icon = new ImageIcon(image);
@@ -461,11 +461,11 @@ public class Client {
 					// ==================================
 					// if there is something to correct
 					// check also the fecEndValue of client and server
-					if(fecWavePackages < fecValue){
+					if(fecWaveReceiveCounter < fecValue){
 						System.out.println("Packege/s got lost");
 
 						// and it is just one package missing
-						if(fecWavePackages < (fecValue -1)){
+						if(fecWaveReceiveCounter < (fecValue -1)){
 							System.out.println("Lost at least two Packages");
 						}
 						else{
@@ -479,18 +479,18 @@ public class Client {
 							System.out.println("Package " + (indexMissingPicture) + " got lost!");							
 
 							// calculate the missing picture						
-							pictureBuffer[pictureBufferSide][indexMissingPicture] = fecPacket.getJpeg(fecData);
+							pictureBuffer[writeBuffer][indexMissingPicture] = fecPacket.getJpeg(fecData);
 							
-							fecPacket.printFew(pictureBuffer[pictureBufferSide][indexMissingPicture]);
+							fecPacket.printFew(pictureBuffer[writeBuffer][indexMissingPicture]);
 
 							// ==================================
 							// test
-							//buf1 = Arrays.copyOf(pictureBuffer[pictureBufferSide][indexMissingPicture], pictureBuffer[pictureBufferSide][indexMissingPicture].length);
+							//buf1 = Arrays.copyOf(pictureBuffer[writeBuffer][indexMissingPicture], pictureBuffer[writeBuffer][indexMissingPicture].length);
 							//buf1 = fecPacket.getJpeg(fecData);
 							// ==================================
 
 
-							System.out.println("Data corrected!");
+							//System.out.println("Data corrected!");
 
 							showCorrected = 0;									
 						}
@@ -500,23 +500,16 @@ public class Client {
 					// if all pictures of the current write side where corrected: 
 					// remove k old pictures from the current read side of the buffer
 					// if is for debug
-					//pictureBuffer[pictureBufferSideReverse] = new byte[fecValue][15000];
+					pictureBuffer[readBuffer] = new byte[fecValue][15000];
 
 					// switch pictureBuffer side
-					if(pictureBufferSide == 0){
-						pictureBufferSide = 1;
-						pictureBufferSideReverse = 0;
-					}
-					else {
-						pictureBufferSide = 0;
-						pictureBufferSideReverse = 1;
-					}
+					switchReadWriteBuffer();
 
 					// clear old data
 					fecPacket.clearData();
 
 					// set fecWavePackage counter to 0
-					fecWavePackages = 0;
+					fecWaveReceiveCounter = 0;
 
 					// =====================
 					// test
@@ -525,7 +518,7 @@ public class Client {
 					// 	indexMissingPicture = -1;
 					// =====================
 					
-					System.out.println("write: " + pictureBufferSide + "\nread: " + pictureBufferSideReverse);
+					//System.out.println("write: " + writeBuffer + "\nread: " + readBuffer);
 
 					return;
 				}
@@ -535,34 +528,44 @@ public class Client {
 					return;
 				}
 
+				//============================
 				// set fecIndex
 				fecIndex = (rtp_packet.getsequencenumber()-1) % fecValue;
 
-				// count fec wave packages
-				fecWavePackages++;
-				if(indexMissingPicture == -1 && fecWavePackages != fecIndex + 1){
-					indexMissingPicture = fecIndex - 1;
+				// did a package go missing?
+					// write latest missing picture index into indexMissingPicture
+				if((lastSequenceNumber + 1) < rtp_packet.getsequencenumber()){
+					
+					System.out.println("=== Package lost, latest missing Picture:" 
+						+ (rtp_packet.getsequencenumber() - 1)
+						+ "  fecIndex: " + (rtp_packet.getsequencenumber() - 2) % fecValue);
+					
+					
+					indexMissingPicture = (rtp_packet.getsequencenumber() - 2) % fecValue;
 				}
 
+				// count fec wave packages
+				fecWaveReceiveCounter++;				
+
+				//============================
+				
 				// add lost packages
 				lostPackages += rtp_packet.getsequencenumber() - lastSequenceNumber - 1;
 
-				
+				// print information just every second
 				if(timerCounter >= 100){
 					lostPacketLabel.setText("Lost Packages: " + lostPackages);
 					lostPacketProcentLabel.setText("Lost Packages in percent: " + df.format(((double)lostPackages/(double)rtp_packet.getsequencenumber())*100) + "%");
 					correctedPacketLabel.setText("Corrected Packages: " + fecPacket.getNrCorrected());
 					timerCounter = 0;
 				}
-				
-				// update last sequence number
-				lastSequenceNumber = rtp_packet.getsequencenumber();
-						
+										
 				// print important header fields of the RTP packet received:
 				System.out.println("Got RTP packet with SeqNum # "
 						+ rtp_packet.getsequencenumber() + " TimeStamp "
 						+ rtp_packet.gettimestamp() + " ms, of type "
 						+ rtp_packet.getpayloadtype());
+				
 
 				// print header bitstream:
 				rtp_packet.printheader();
@@ -573,15 +576,15 @@ public class Client {
 				// ==================================
 				// get the payload into pictureBuffer[]
 				// => pictureBuffer[circle-index][k-index][length]
-				pictureBuffer[pictureBufferSide]
+				pictureBuffer[writeBuffer]
 							 [fecIndex]
 							  = new byte[rtp_packet.getpayload_length()];
-				rtp_packet.getpayload(pictureBuffer[pictureBufferSide][fecIndex]);
+				rtp_packet.getpayload(pictureBuffer[writeBuffer][fecIndex]);
 				
-				System.out.println("side: " + pictureBufferSide + " fecIndex: " + fecIndex);
+				//System.out.println("side: " + writeBuffer + " fecIndex: " + fecIndex);
 
 				// calculate the payload to the current fec wave value
-				fecPacket.setData(pictureBuffer[pictureBufferSide][fecIndex]);
+				fecPacket.setData(pictureBuffer[writeBuffer][fecIndex]);
 							
 				// get the payload bitstream from the RTPpacket object
 				int payload_length = rtp_packet.getpayload_length();
@@ -602,9 +605,9 @@ public class Client {
 						
 				// create image with data of pictureBuffer[]
 				Image image = toolkit.createImage(
-						pictureBuffer[pictureBufferSideReverse][fecIndex]
+						pictureBuffer[readBuffer][fecIndex]
 						, 0
-						, pictureBuffer[pictureBufferSideReverse][fecIndex].length);
+						, pictureBuffer[readBuffer][fecIndex].length);
 				/*
 
 				 Image image = toolkit.createImage(
@@ -617,7 +620,8 @@ public class Client {
 				iconLabel.setIcon(icon);
 				// }
 
-
+				// update last sequence number
+				lastSequenceNumber = rtp_packet.getsequencenumber();
 
 			} catch (InterruptedIOException iioe) {
 				// System.out.println("Nothing to read");
@@ -752,5 +756,17 @@ public class Client {
 		}
 	}
 
-}// end of Class Client
 
+	private void switchReadWriteBuffer(){
+		if(writeBuffer == 0){
+			writeBuffer = 1;
+			readBuffer = 0;
+		}
+		else {
+			writeBuffer = 0;
+			readBuffer = 1;
+		}
+	}
+
+
+}// end of Class Client

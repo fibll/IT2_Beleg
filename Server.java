@@ -291,7 +291,7 @@ public class Server extends JFrame implements ActionListener {
 				
 				// ==================================
 				//if (random.nextDouble() > packetLoss) {
-				if(imagenb % 7 != 0){
+				if(imagenb % 3 != 0){
 				// ==================================
 
 					// send the packet as a DatagramPacket over the UDP socket
