@@ -91,6 +91,13 @@ public class Client {
 	// And cause it got a delay of k-pictures it would be easy to have this array doubled
 	//  byte[2][k][unknown(yet)]
 	static byte[][][] pictureBuffer;
+	static byte[][] outputBuffer;
+	static int outputBufferWriteIndex = 0;
+	static int outputBufferReadIndex = 0;
+	static int outputBufferSize = 50;
+	static int framePeriod = 0;
+	static int counter = 0;
+
 	static int writeBuffer = 0;
 	static int readBuffer = 1;
 	static byte[] fecData;
@@ -249,6 +256,7 @@ public class Client {
 
 				// write 0s in pictureBuffer array
 				pictureBuffer = new byte[2][fecValue][15000];
+				outputBuffer = new byte[outputBufferSize][15000];
 
 			}// else if state != INIT then do nothing
 		}
@@ -418,6 +426,48 @@ public class Client {
 
 			timerCounter++;
 			
+			// SHOW IMAGE
+			// ==================================			
+			if(framePeriod != 0){
+				if(timerCounter % framePeriod == 0){
+					Toolkit toolkit = Toolkit.getDefaultToolkit();
+
+					// create image with data of outputBuffer[]
+					Image image = toolkit.createImage(
+						outputBuffer[outputBufferReadIndex]
+							, 0
+							, outputBuffer[outputBufferReadIndex].length);
+
+					// display the image as an ImageIcon object
+					icon = new ImageIcon(image);
+					iconLabel.setIcon(icon);
+
+					// increase read counter
+					if(counter != 0){
+						counter--;
+					}
+					else{
+						if(outputBufferReadIndex != outputBufferWriteIndex){
+							if(outputBufferReadIndex >= outputBufferSize - 1){
+								outputBufferReadIndex = 0;
+							}
+							else{
+								outputBufferReadIndex++;
+							}
+						}
+						else{
+							counter = 5;
+						}
+					}
+					System.out.println("WriteIdx: " + outputBufferWriteIndex + " ReadIdx: " + outputBufferReadIndex);
+				}
+			}
+
+
+			
+			// RECEIVE DATA
+			// ==================================			
+			
 			// Construct a DatagramPacket to receive data from the UDP socket
 			rcvdp = new DatagramPacket(buf, buf.length);
 
@@ -499,10 +549,24 @@ public class Client {
 
 
 							//System.out.println("Data corrected!");
-
 							showCorrected = 0;									
 						}
 					}
+
+					// transfer ===
+					// transfer data from writeBuffer to outputBuffer
+					for(int i = 0; i < fecValue; i++){
+						// write into buffer
+						outputBuffer[outputBufferWriteIndex] = pictureBuffer[writeBuffer][i];
+
+						// correct outputBuffer
+						if(outputBufferWriteIndex >= outputBufferSize - 1){
+							outputBufferWriteIndex = 0;
+						}
+						else{
+							outputBufferWriteIndex++;
+						}
+					}			
 
 					// clean up ===
 					// if all pictures of the current write side where corrected: 
@@ -527,7 +591,20 @@ public class Client {
 					// if is for debug
 					// if(showCorrected != 1)
 					// =====================
-					
+						
+					// ===============================
+					// debug
+					/*
+					System.out.println("----------");
+					for(int i = 0; i < outputBufferSize; i++)
+					{
+						fecPacket.printFew(outputBuffer[i]);
+					}
+					System.out.println("----------");
+					*/
+					// ===============================
+
+
 					//System.out.println("write: " + writeBuffer + "\nread: " + readBuffer);
 					return;
 				}
@@ -603,7 +680,7 @@ public class Client {
 				rtp_packet.getpayload(payload);
 
 
-
+				/*
 				// SHOW IMAGE
 				// ==================================
 				Toolkit toolkit = Toolkit.getDefaultToolkit();
@@ -619,32 +696,20 @@ public class Client {
 						pictureBuffer[readBuffer][fecIndex]
 						, 0
 						, pictureBuffer[readBuffer][fecIndex].length);
-				/*
-
-				 Image image = toolkit.createImage(
-				 		buf1
-				 		, 0
-				 		, buf1.length);
-				*/
+			
 				// display the image as an ImageIcon object
 				icon = new ImageIcon(image);
 				iconLabel.setIcon(icon);
 				// }
+				*/
+
+				// calculate frame period
+				if(timerCounter % (outputBufferSize - 11) == 0) {
+					framePeriod = ((rtp_packet.TimeStamp) / rtp_packet.getsequencenumber()) / 10;	
+				}
 
 				// update last sequence number
 				lastSequenceNumber = rtp_packet.getsequencenumber();
-
-
-				// ===============================
-				// debug
-				System.out.println("read: " + readBuffer + "index: " + fecIndex);
-				System.out.println("----------");
-				fecPacket.printFew(pictureBuffer[0][0]);
-				fecPacket.printFew(pictureBuffer[0][1]);
-				//fecPacket.printFew(pictureBuffer[1][0]);
-				//fecPacket.printFew(pictureBuffer[1][1]);
-				System.out.println("----------");
-				// ===============================
 
 			} catch (InterruptedIOException iioe) {
 				// System.out.println("Nothing to read");

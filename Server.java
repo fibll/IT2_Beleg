@@ -42,7 +42,7 @@ public class Server extends JFrame implements ActionListener {
 	int imagenb = 0; // image nb of the image currently transmitted
 	VideoStream video; // VideoStream object used to access video frames
 	static int MJPEG_TYPE = 26; // RTP payload type for MJPEG video
-	static int FRAME_PERIOD = 1000;//40; // Frame period of the video to stream, in ms
+	static int FRAME_PERIOD = 40; // Frame period of the video to stream, in ms
 	static int VIDEO_LENGTH = 500; // length of the video in frames
 
 	Timer timer; // timer used to send the images at the video frame rate
@@ -290,9 +290,8 @@ public class Server extends JFrame implements ActionListener {
 				// simulate packet loss
 				
 				// ==================================
-				//if (random.nextDouble() > packetLoss) {
-				if(imagenb % 4 != 0){
-
+				if (random.nextDouble() > packetLoss) {
+				//if(imagenb % 4 != 0){
 				// ==================================
 
 					// send the packet as a DatagramPacket over the UDP socket
